@@ -264,6 +264,52 @@ input[type="range"]::-moz-range-thumb{width:20px;height:20px;border:0;border-rad
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001ms !important;transition-duration:.001ms !important}
 }
+/* ---- feedback widget ---- */
+.fbfab{position:fixed;right:16px;bottom:16px;z-index:40;border:0;border-radius:999px;
+  background:var(--ink);color:var(--canvas);padding:12px 20px;font-size:14.5px;font-weight:600;
+  cursor:pointer;box-shadow:0 6px 20px -6px rgba(0,0,0,.4)}
+.fbfab:active{transform:scale(.97)}
+.fbwrap{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.32);display:flex;
+  align-items:flex-end;justify-content:center;padding:0}
+.fbsheet{background:var(--surface);width:100%;max-width:520px;max-height:92vh;display:flex;flex-direction:column;
+  border-radius:20px 20px 0 0;box-shadow:0 -8px 40px -12px rgba(0,0,0,.4);animation:fbup .3s var(--ease)}
+@keyframes fbup{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+.fbhead{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;
+  border-bottom:1px solid var(--hairline-soft)}
+.fbhead b{font-size:17px;font-weight:600}
+.fbx{background:none;border:0;font-size:26px;line-height:1;color:var(--ink-3);cursor:pointer;padding:0 4px}
+.fbbody{padding:16px 18px;overflow:auto;flex:1}
+.fblab{display:block;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--ink-3);margin:14px 0 7px}
+.fblab:first-child{margin-top:0}
+.fbchips{display:flex;gap:7px;flex-wrap:wrap}
+.fbchips button{border:1px solid var(--hairline);background:var(--surface);border-radius:999px;
+  padding:8px 14px;font-size:14px;cursor:pointer;color:var(--ink)}
+.fbchips button.on{background:var(--accent);color:#fff;border-color:transparent}
+.fbbody textarea,.fbbody input{width:100%;border:1px solid var(--hairline);border-radius:var(--r-md);
+  background:var(--surface-sunken);color:var(--ink);padding:11px 13px;font:inherit;font-size:15px;resize:vertical}
+.fbctx{margin-top:16px;border:1px solid var(--hairline-soft);border-radius:var(--r-md);
+  padding:11px 13px;font-size:12.5px;color:var(--ink-3);line-height:1.5;background:var(--surface-sunken)}
+.fbctx b{display:block;color:var(--ink-2);font-size:11px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.fbfoot{display:flex;gap:8px;align-items:center;padding:13px 18px;border-top:1px solid var(--hairline-soft)}
+.fbbtn{border:0;border-radius:999px;padding:10px 18px;font-size:14.5px;font-weight:500;cursor:pointer;
+  background:var(--accent);color:#fff}
+.fbbtn.ghost{background:var(--surface-sunken);color:var(--ink);border:1px solid var(--hairline)}
+.fbitem{border:1px solid var(--hairline-soft);border-radius:var(--r-md);padding:12px 14px;margin-bottom:9px;font-size:14px}
+.fbmeta{font-size:11.5px;color:var(--ink-3);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.fbwhere{font-size:12.5px;color:var(--accent-ink);margin:3px 0 6px}
+.fbtoast{position:fixed;left:50%;bottom:80px;transform:translateX(-50%);z-index:60;background:var(--ink);
+  color:var(--canvas);padding:11px 18px;border-radius:999px;font-size:14px;transition:opacity .3s}
+@media(min-width:560px){.fbwrap{align-items:center}.fbsheet{border-radius:20px}}
+.fbnote{display:block;margin-top:8px;padding-top:8px;border-top:1px solid var(--hairline-soft);color:var(--ink-2)}
+.fbhint{position:fixed;right:16px;bottom:74px;z-index:39;max-width:280px;background:var(--ink);color:var(--canvas);
+  border-radius:14px;padding:13px 15px;font-size:13.5px;line-height:1.45;box-shadow:0 8px 26px -8px rgba(0,0,0,.45);
+  transition:opacity .25s;animation:fbup .35s var(--ease)}
+.fbhint b{font-weight:700}
+.fbhint button{display:block;margin-top:10px;background:none;border:0;color:var(--canvas);opacity:.7;
+  font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:0;text-decoration:underline}
+.fbhint::after{content:'';position:absolute;right:26px;bottom:-6px;width:12px;height:12px;
+  background:var(--ind);background:var(--ink);transform:rotate(45deg)}
 </style>
 </head>
 <body class="mode-train">
@@ -1360,6 +1406,177 @@ document.addEventListener('keydown', e => {
 resetStage();
 render();
 requestAnimationFrame(frame);
+
+/* ==================================================================
+   Feedback
+   ================================================================== */
+/* What the trainer reports about where the tester was. Reads live session
+   state so a bug report says which section and which prompt, not "the app". */
+function FB_CONTEXT(){
+  const m = session.mode;
+  let where;
+  if(!session.running){
+    where = (m === 'train' ? 'Train' : 'Perform') + ' \u2014 not started';
+  } else if(m === 'train'){
+    const sec = session.plan ? session.plan.sections[train.sectionIndex] : null;
+    where = 'Train \u2014 ' + (sec ? sec.name : '?') + ' \u2014 prompt ' + (train.itemIndex + 1) +
+            ' of ' + (sec ? sec.items : '?') + ' \u2014 "' + $('title').textContent + '"';
+  } else {
+    where = 'Perform \u2014 ' + (perform.progression ? perform.progression.name : '?') +
+            ' \u2014 chord "' + $('title').textContent + '" \u2014 constraint "' + perform.constraint + '"';
+  }
+  return {
+    where,
+    settings: 'key=' + key() + ' ' + position().name + ' ' + bpm() + 'bpm' +
+              ' fretboard=' + $('diagramMode').value + ' labels=' + $('labelMode').value +
+              (session.paused ? ' PAUSED' : '')
+  };
+}
+
+/* ==================================================================
+   Feedback widget. Captures where the tester was, not just what they
+   said — screen, week, day, step, settings, device — so nobody has to
+   write "on the page with the diagram, I think it was day 2?"
+   ================================================================== */
+/* Paste the Apps Script /exec URL here and submissions go straight to your
+   Sheet. Leave it empty and Send falls back to opening the tester's mail app. */
+const FEEDBACK_URL = 'https://script.google.com/macros/s/AKfycbyYw0G3YUMXyoYpJn-xSD1wuUnoTLXJnE0kSL7vetKzAmGW2jZrlTyWZkg_SNrAz6gR/exec';
+const FEEDBACK_TO  = 'you@example.com';
+
+const FB = (() => {
+  const KEY = 'cagedFeedback', WHO = 'cagedTester';
+  const load = () => { try { return JSON.parse(store.get(KEY, '[]')); } catch(e){ return []; } };
+  const save = list => store.set(KEY, JSON.stringify(list));
+  let draft = {type:'bug', severity:'annoying'};
+
+  /* The host page supplies FB_CONTEXT() — that is the only part that differs
+     between the trainer and the learn module. Everything else is identical. */
+  function context(){
+    const c = FB_CONTEXT();
+    c.device = screen.width + 'x' + screen.height + ' vw' + window.innerWidth + ' ' +
+               (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+    return c;
+  }
+
+  const block = f => ['--- CAGED FEEDBACK ---','id: '+f.id,'tester: '+f.tester,'when: '+f.when,
+    'type: '+f.type,'severity: '+(f.type==='bug'?f.severity:'-'),'where: '+f.where,
+    'settings: '+f.settings,'device: '+f.device,'text: '+f.text.replace(/\n+/g,' / '),'--- END ---'].join('\n');
+
+  function open(){
+    seen();
+    const c = context();
+    document.body.insertAdjacentHTML('beforeend',
+      '<div class="fbwrap" id="fbwrap"><div class="fbsheet">' +
+      '<div class="fbhead"><b>Feedback</b><button class="fbx" onclick="FB.close()">&times;</button></div>' +
+      '<div class="fbbody">' +
+      '<label class="fblab">What kind?</label><div class="fbchips" id="fbType">' +
+      [['bug','Something broke'],['confusing','Confusing'],['idea','Idea'],['praise','This worked']]
+        .map(x => '<button data-v="'+x[0]+'" class="'+(x[0]===draft.type?'on':'')+'" onclick="FB.pick(\'type\',\''+x[0]+'\')">'+x[1]+'</button>').join('') +
+      '</div><div id="fbSevWrap"' + (draft.type!=='bug'?' hidden':'') + '>' +
+      '<label class="fblab">How bad?</label><div class="fbchips" id="fbSev">' +
+      [['blocking','Stopped me'],['annoying','Annoying'],['minor','Minor']]
+        .map(x => '<button data-v="'+x[0]+'" class="'+(x[0]===draft.severity?'on':'')+'" onclick="FB.pick(\'severity\',\''+x[0]+'\')">'+x[1]+'</button>').join('') +
+      '</div></div>' +
+      '<label class="fblab" for="fbText">In your own words</label>' +
+      '<textarea id="fbText" rows="5" placeholder="What happened, or what would be better?"></textarea>' +
+      '<label class="fblab" for="fbWho">Your name</label>' +
+      '<input id="fbWho" value="' + store.get(WHO,'') + '" placeholder="So we know who to ask">' +
+      '<div class="fbctx"><b>Where you are right now</b>' + c.where + ' &middot; ' + c.settings + ' &middot; ' + c.device +
+      '<span class="fbnote">Attached automatically. Telling us about something from earlier? Just say so in your note and we will match it up.</span></div>' +
+      '</div><div class="fbfoot"><button class="fbbtn ghost" onclick="FB.history()">History</button>' +
+      '<span style="flex:1"></span><button class="fbbtn ghost" onclick="FB.submit(\'copy\')">Copy</button>' +
+      '<button class="fbbtn" onclick="FB.submit(\'mail\')">Send</button></div></div></div>');
+    setTimeout(() => document.getElementById('fbText').focus(), 60);
+  }
+
+  function pick(k, v){
+    draft[k] = v;
+    document.querySelectorAll('#fb' + (k==='type'?'Type':'Sev') + ' button')
+      .forEach(b => b.classList.toggle('on', b.dataset.v === v));
+    if(k === 'type') document.getElementById('fbSevWrap').hidden = v !== 'bug';
+  }
+
+  function submit(how){
+    const text = document.getElementById('fbText').value.trim();
+    if(!text){ document.getElementById('fbText').focus(); return; }
+    const tester = document.getElementById('fbWho').value.trim() || 'anon';
+    store.set(WHO, tester);
+    const f = Object.assign({id:'fb-'+Date.now().toString(36), tester,
+      when:new Date().toISOString().slice(0,16).replace('T',' '),
+      type:draft.type, severity:draft.severity, text}, context());
+    const list = load(); list.push(f); save(list);   /* always keep a local copy */
+
+    if(how === 'copy'){
+      if(navigator.clipboard) navigator.clipboard.writeText(block(f));
+      close(); toast('Copied \u2014 paste it wherever suits'); return;
+    }
+    if(FEEDBACK_URL){
+      /* text/plain keeps this a simple request, so the browser skips the CORS
+         preflight that Apps Script will not answer. The reply is opaque, which
+         is fine — the local copy is the safety net if it ever fails. */
+      fetch(FEEDBACK_URL, {method:'POST', mode:'no-cors',
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify(f)}).catch(function(){});
+      close(); toast('Thanks \u2014 sent');
+    } else {
+      location.href = 'mailto:' + FEEDBACK_TO + '?subject=' +
+        encodeURIComponent('CAGED feedback from ' + tester) + '&body=' + encodeURIComponent(block(f));
+      close(); toast('Opening your mail app');
+    }
+  }
+
+  function history(){
+    const list = load();
+    document.querySelector('.fbsheet').innerHTML =
+      '<div class="fbhead"><b>Your feedback &middot; ' + list.length + '</b>' +
+      '<button class="fbx" onclick="FB.close()">&times;</button></div><div class="fbbody">' +
+      (list.length ? list.slice().reverse().map(f =>
+        '<div class="fbitem"><div class="fbmeta">' + f.when + ' &middot; ' + f.type +
+        (f.type==='bug' ? ' &middot; '+f.severity : '') + '</div><div class="fbwhere">' + f.where +
+        '</div><div>' + f.text + '</div></div>').join('')
+        : '<p style="color:var(--ink-2);font-size:14px">Nothing yet.</p>') +
+      '</div><div class="fbfoot"><button class="fbbtn ghost" onclick="FB.open2()">New</button>' +
+      '<span style="flex:1"></span><button class="fbbtn" onclick="FB.exportAll()">Copy all ' + list.length + '</button></div>';
+  }
+
+  function exportAll(){
+    const all = load().map(block).join('\n\n');
+    if(navigator.clipboard) navigator.clipboard.writeText(all);
+    close(); toast('All feedback copied');
+  }
+
+  function toast(msg){
+    document.body.insertAdjacentHTML('beforeend', '<div class="fbtoast">' + msg + '</div>');
+    const t = document.querySelector('.fbtoast');
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2200);
+  }
+  function hint(){
+    if(store.get('cagedFbSeen','')) return;
+    document.body.insertAdjacentHTML('beforeend',
+      '<div class="fbhint" id="fbhint">Hit a snag, or something unclear? Tap <b>Feedback</b>. ' +
+      'It records which screen you were on, so tap it there and then rather than saving things up.' +
+      '<button onclick="FB.seen()">Got it</button></div>');
+  }
+  function seen(){
+    store.set('cagedFbSeen','1');
+    const h = document.getElementById('fbhint');
+    if(h){ h.style.opacity='0'; setTimeout(function(){ h.remove(); }, 250); }
+  }
+  const close = () => { const w = document.getElementById('fbwrap'); if(w) w.remove(); };
+  const open2 = () => { close(); open(); };
+
+  return {open, open2, close, pick, submit, history, exportAll, hint, seen};
+})();
+
+document.body.insertAdjacentHTML('beforeend',
+  '<button class="fbfab" onclick="FB.open()" aria-label="Give feedback">Feedback</button>');
+document.body.insertAdjacentHTML('beforeend',
+  '<button class="fbfab" onclick="FB.open()" aria-label="Give feedback">Feedback</button>');
+FB.hint();
+
+document.body.insertAdjacentHTML('beforeend',
+  '<button class="fbfab" onclick="FB.open()" aria-label="Give feedback">Feedback</button>');
+
 </script>
 </body>
 </html>
