@@ -166,13 +166,21 @@ body.mode-perform .seg__thumb{transform:translateX(100%)}
 .fb-mark{fill:var(--surface);stroke:var(--dot);stroke-width:1.6}
 .fb-mark.filled{fill:var(--dot);stroke:var(--dot)}
 .fb-mark.dashed{stroke-dasharray:3.2 2.6}
+.fb-inner{fill:none;stroke:var(--surface);stroke-width:1.3;stroke-dasharray:2.2 2.4;opacity:.9}
 .fb-ring{fill:none;stroke:var(--dot);stroke-width:1.6}
 .fb-txt{font-size:9.5px;font-weight:700;text-anchor:middle;dominant-baseline:central;fill:var(--dot-ink)}
 .fb-txt.on{fill:var(--dot-on-ink)}
-.fb-dim{opacity:.34}
 .fb-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--ink-2)}
 .fb-legend span{display:inline-flex;align-items:center;gap:6px}
 .fb-legend svg{flex:none}
+/* Full-neck board for the root drill. No labels on the dots — every one is the
+   same note, so the marker alone says it, and that keeps them legible at
+   thirteen frets across on a phone. */
+.nb{width:100%;max-width:520px;height:auto;display:block}
+.nb-open{fill:none;stroke:var(--dot);stroke-width:1.6}
+.nb-dot{fill:var(--dot)}
+.nb-reveal{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+.nb-count{font-size:13px;color:var(--ink-2)}
 
 /* Constraint */
 .constraint{border:1px solid var(--hairline);border-radius:var(--r-md);padding:14px 16px;background:var(--accent-wash)}
@@ -264,6 +272,30 @@ input[type="range"]::-moz-range-thumb{width:20px;height:20px;border:0;border-rad
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001ms !important;transition-duration:.001ms !important}
 }
+
+/* ---- practice motivation ---- */
+.mv-lede{font-size:14.5px;color:var(--ink-2);line-height:1.5;margin:0 0 4px}
+.mv-note{font-size:12.5px;color:var(--ink-3);line-height:1.5;margin:12px 0 0}
+.mv-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.mv-chips button{border:1px solid var(--hairline);background:var(--surface-sunken);border-radius:999px;
+  padding:6px 12px;font-size:12.5px;cursor:pointer;color:var(--ink-2)}
+.mv-quote{margin:10px 0 0;padding:13px 15px;border-left:3px solid var(--accent);background:var(--accent-wash);
+  border-radius:0 var(--r-md) var(--r-md) 0;font-size:16px;font-weight:500;color:var(--ink)}
+.mv-anchors{margin:12px 0 18px;padding-left:20px;font-size:12.5px;color:var(--ink-3);line-height:1.65}
+.mv-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;
+  border-bottom:1px solid var(--hairline-soft);font-size:14.5px}
+.mv-row:last-child{border-bottom:0}
+.mv-scale{display:flex;gap:5px;flex:none}
+.mv-scale button{width:34px;height:34px;border:1px solid var(--hairline);background:var(--surface);
+  border-radius:9px;font:inherit;font-size:14px;cursor:pointer;color:var(--ink)}
+.mv-scale button.on{background:var(--accent);color:#fff;border-color:transparent}
+.mv-trend{display:inline-flex;align-items:center;gap:9px}
+.mv-spark{width:84px;height:20px;fill:none;stroke:var(--accent);stroke-width:1.6;
+  stroke-linejoin:round;stroke-linecap:round;overflow:visible}
+.mv-trend b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;min-width:12px;text-align:right}
+.mv-nodata{color:var(--ink-3);width:84px;display:inline-block;text-align:center}
+.mv-foot{font-size:11.5px;color:var(--ink-3);padding:0 18px 15px;margin:0;line-height:1.5}
+
 /* ---- feedback widget ---- */
 .fbfab{position:fixed;right:16px;bottom:16px;z-index:40;border:0;border-radius:999px;
   background:var(--ink);color:var(--canvas);padding:12px 20px;font-size:14.5px;font-weight:600;
@@ -444,6 +476,8 @@ input[type="range"]::-moz-range-thumb{width:20px;height:20px;border:0;border-rad
         <div class="list" id="progressList"></div>
       </section>
 
+      <div id="fluencyCard"></div>
+
     </div>
   </div>
 </main>
@@ -472,7 +506,7 @@ const POSITIONS = [
 
 /* name, share of the session, bars each prompt is held for */
 const TRAIN_BLOCKS = [
-  ['Note recall', 60,  4],
+  ['Note recall', 120, 8],   /* 8 bars = 32s at 60 BPM; share raised so it still fits four notes */
   ['Chord shape', 90,  4],
   ['Arpeggio',    120, 4],
   ['Full scale',  180, 4],
@@ -521,6 +555,7 @@ const voicing = (m, v) => v === 'bass'  ? [m[0] - 12]
                         : v === 'upper' ? [m[1], m[2], m[3]]
                         :                 [m[0], m[1], m[2]];
 
+const COMP_TAIL_BEATS = 1.25; // how long a struck note rings, in beats
 const BEATS_PER_CHORD = 16;   // four bars of 4/4
 const BEATS_PER_BAR = 4;
 const ROTATION = 6;           // degrees 1-6 in a position
@@ -720,8 +755,11 @@ const Audio = (() => {
   /* One struck note. Fast attack, quick initial decay to a sustain, long tail,
      with the filter closing as it rings — a plucked/struck envelope rather than
      the flat drone this replaced. Two slightly detuned oscillators give it body. */
-  function strike(midis, t, level){
+  /* tail is passed in beats-worth of seconds by the caller, so the comp keeps
+     the same feel at any tempo instead of smearing as the beats get closer */
+  function strike(midis, t, level, tail){
     if(!ctx) return;
+    tail = tail || 1.25;
     prune(t);
     midis.forEach(m => {
       const f = 440 * Math.pow(2, (m - 69) / 12);
@@ -736,11 +774,11 @@ const Audio = (() => {
       g.gain.setValueAtTime(.0001, t);
       g.gain.exponentialRampToValueAtTime(peak, t + .008);
       g.gain.exponentialRampToValueAtTime(peak * .34, t + .2);
-      g.gain.exponentialRampToValueAtTime(.0001, t + 1.25);
+      g.gain.exponentialRampToValueAtTime(.0001, t + tail);
       o1.connect(lp); o2.connect(lp); lp.connect(g); g.connect(backingBus);
       o1.start(t); o2.start(t);
-      o1.stop(t + 1.3); o2.stop(t + 1.3);
-      voices.push({o1, o2, g, until:t + 1.3});
+      o1.stop(t + tail + .05); o2.stop(t + tail + .05);
+      voices.push({o1, o2, g, until:t + tail + .05});
     });
   }
 
@@ -823,7 +861,8 @@ function schedule(){
         const bar = perform.beatInChord % BEATS_PER_BAR, spb = 60 / bpm();
         if(perform.chord && $('backingToggle').checked)
           COMP.filter(h => Math.floor(h.at) === bar)
-              .forEach(h => Audio.strike(voicing(perform.chord, h.voice), t + (h.at - bar) * spb, h.level));
+              .forEach(h => Audio.strike(voicing(perform.chord, h.voice),
+                                         t + (h.at - bar) * spb, h.level, COMP_TAIL_BEATS * spb));
         perform.beatInChord++;
       } else if(session.mode === 'train' && session.plan){
         const sec = session.plan.sections[train.sectionIndex];
@@ -918,7 +957,7 @@ const noteBag = (() => {
       if(i >= order.length) shuffle(order[order.length - 1]);
       const pitch = order[i++];
       store.set('cagedNoteBag', JSON.stringify({order, i}));
-      return {name:CHROMATIC[pitch], step:i};
+      return {name:CHROMATIC[pitch], pc:pitch, step:i};
     }
   };
 })();
@@ -945,12 +984,17 @@ function trainPrompt(sectionIndex, itemIndex){
 
   if(section === 'Note recall'){
     const n = noteFor(sectionIndex, itemIndex);
-    return setPrompt({
+    const id = sectionIndex + ':' + itemIndex;
+    if(id !== revealKey){ revealKey = id; noteRevealed = false; }   /* new note, hide again */
+    setPrompt({
       eyebrow:section,
       title:n.name,
       lede:`Find every ${n.name} on the neck, nut to twelfth fret.`,
       details:[['Note', n.step + ' of ' + CHROMATIC.length]]
     });
+    if(diagramMode() !== 'off')
+      $('diagramSlot').innerHTML = neckboard(n.pc, k, noteRevealed);
+    return;
   }
   const focus = section === 'Full scale' ? 'scale' : section === 'Pentatonic' ? 'pent' : 'chord';
   const draw = () => {
@@ -1009,20 +1053,29 @@ function performPrompt(){
 const diagramMode = () => $('diagramMode').value;
 const labelMode = () => $('labelMode').value;
 
-function markup(role, pent, x, y, dim){
-  const cls = 'fb-mark' + (role === 'other' ? '' : ' filled') + (pent ? '' : ' dashed') + (dim ? ' fb-dim' : '');
+/* Fill says "play this one now". Silhouette says what the note is — ringed
+   circle for the root, square for a chord tone, plain circle for the rest.
+   Edge says whether it survives into the pentatonic. Three channels, none of
+   them colour, and they read independently. */
+function markup(role, pent, played, x, y){
+  /* Outside the pentatonic reads as a dashed edge when the note is hollow, and
+     as a dashed ring just inside the fill when it is solid — a dashed edge on a
+     filled dot scallops the silhouette and reads as a cog. */
+  const cls = 'fb-mark' + (played ? ' filled' : '') + (!pent && !played ? ' dashed' : '');
   if(role === 'chord')
     return `<rect class="${cls}" x="${x-10}" y="${y-10}" width="20" height="20" rx="5.5"/>`;
-  const ring = role === 'root'
-    ? `<circle class="fb-ring${dim ? ' fb-dim' : ''}" cx="${x}" cy="${y}" r="14"/>` : '';
-  return ring + `<circle class="${cls}" cx="${x}" cy="${y}" r="10.5"/>`;
+  const ring = role === 'root' ? `<circle class="fb-ring" cx="${x}" cy="${y}" r="14"/>` : '';
+  const inner = (!pent && played) ? `<circle class="fb-inner" cx="${x}" cy="${y}" r="8.4"/>` : '';
+  return ring + `<circle class="${cls}" cx="${x}" cy="${y}" r="10.5"/>` + inner;
 }
 
-function legend(){
-  const g = (role, pent, text) =>
-    `<span><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">${markup(role, pent, 15, 15, false)}</svg>${text}</span>`;
-  return '<div class="fb-legend">' + g('root', true, 'Root') + g('chord', true, 'Chord tone') +
-         g('other', true, 'Scale tone') + g('other', false, 'Not in pentatonic') + '</div>';
+function legend(focus){
+  const g = (role, pent, played, text) =>
+    `<span><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true">${markup(role, pent, played, 15, 15)}</svg>${text}</span>`;
+  const nonPentPlayed = focus === 'scale';       /* during Full scale you do play the 4th and 7th */
+  return '<div class="fb-legend">' + g('root', true, true, 'Root') + g('chord', true, true, 'Chord tone') +
+         (focus === 'scale' ? '' : g('other', true, false, 'In the shape, not this exercise')) +
+         g('other', false, nonPentPlayed, 'Not in the pentatonic') + '</div>';
 }
 
 function fretboard(shapeName, rootPc, keyName, focus){
@@ -1050,13 +1103,13 @@ function fretboard(shapeName, rootPc, keyName, focus){
   let drawn = 0;
   notes.forEach(n => {
     if(rootsOnly && n.role !== 'root') return;
-    const inFocus = focus === 'scale' ? true
-                  : focus === 'pent'  ? n.pent
-                  : n.role !== 'other';
-    const dim = !inFocus;
+    /* what this section actually asks them to play */
+    const played = focus === 'scale' ? true
+                 : focus === 'pent'  ? n.pent
+                 : n.role !== 'other';
     drawn++;
-    p.push(markup(n.role, n.pent, x(n.fret), y(n.st), dim));
-    p.push(`<text class="fb-txt${n.role === 'other' ? '' : ' on'}${dim ? ' fb-dim' : ''}" x="${x(n.fret)}" y="${y(n.st)}">` +
+    p.push(markup(n.role, n.pent, played, x(n.fret), y(n.st)));
+    p.push(`<text class="fb-txt${played ? ' on' : ''}" x="${x(n.fret)}" y="${y(n.st)}">` +
       (labelMode() === 'note' ? noteName(n.pc, flats) : n.iv) + '</text>');
   });
   for(let f = first; f <= last; f++)
@@ -1064,7 +1117,54 @@ function fretboard(shapeName, rootPc, keyName, focus){
 
   const desc = `${shapeName}, ${drawn} notes across frets ${start} to ${start + FRET_SPAN - 1}`;
   return `<svg class="fb" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${desc}">` +
-    p.join('') + '</svg>' + (rootsOnly ? '' : legend());
+    p.join('') + '</svg>' + (rootsOnly ? '' : legend(focus));
+}
+
+/* Every place a pitch class appears between the nut and the twelfth fret. */
+function neckPositions(pc){
+  const out = [];
+  for(let st = 0; st < 6; st++){
+    const first = ((pc - STRING_PC[st]) % 12 + 12) % 12;
+    out.push({st, fret:first});
+    if(first === 0) out.push({st, fret:12});
+  }
+  return out;
+}
+
+function neckboard(pc, keyName, revealed){
+  const cw = 26, rh = 23, gx = 24, ow = 26, gy = 16;
+  const nut = gx + ow, W = nut + 12 * cw + 10, H = gy + 5 * rh + 30;
+  const y = st => gy + st * rh;
+  const fx = f => f === 0 ? gx + ow / 2 : nut + (f - 1) * cw + cw / 2;
+  const p = [];
+
+  for(let st = 0; st < 6; st++)
+    p.push(`<line class="fb-str" x1="${nut}" y1="${y(st)}" x2="${nut + 12 * cw}" y2="${y(st)}"/>`);
+  p.push(`<line class="fb-nut" x1="${nut}" y1="${y(0)}" x2="${nut}" y2="${y(5)}"/>`);
+  for(let f = 1; f <= 12; f++)
+    p.push(`<line class="fb-fret" x1="${nut + f * cw}" y1="${y(0)}" x2="${nut + f * cw}" y2="${y(5)}"/>`);
+  [3,5,7,9].forEach(f => p.push(`<circle class="fb-inlay" cx="${fx(f)}" cy="${(y(0)+y(5))/2}" r="3.5"/>`));
+  [1.6, 3.4].forEach(k => p.push(`<circle class="fb-inlay" cx="${fx(12)}" cy="${y(0) + k * rh}" r="3.5"/>`));
+  STRING_NAME.forEach((n, st) => p.push(`<text class="fb-name" x="${gx - 6}" y="${y(st) + 3.5}">${n}</text>`));
+  [3,5,7,9,12].forEach(f => p.push(`<text class="fb-num" x="${fx(f)}" y="${y(5) + 21}">${f}</text>`));
+
+  const spots = neckPositions(pc);
+  if(revealed) spots.forEach(s => p.push(
+    s.fret === 0 ? `<circle class="nb-open" cx="${fx(0)}" cy="${y(s.st)}" r="6.5"/>`
+                 : `<circle class="nb-dot" cx="${fx(s.fret)}" cy="${y(s.st)}" r="7.5"/>`));
+
+  const label = revealed ? `${spots.length} places, counting open strings` : 'Find them all first';
+  return `<svg class="nb" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" ` +
+    `aria-label="Guitar neck, nut to twelfth fret${revealed ? ', showing ' + spots.length + ' positions' : ', blank'}">` +
+    p.join('') + '</svg>' +
+    `<div class="nb-reveal"><button class="btn" onclick="toggleReveal()">${revealed ? 'Hide' : 'Show me'}</button>` +
+    `<span class="nb-count">${label}</span></div>`;
+}
+
+let noteRevealed = false, revealKey = '';
+function toggleReveal(){
+  noteRevealed = !noteRevealed;
+  trainPrompt(train.sectionIndex, train.itemIndex);
 }
 
 function paintBeatRail(beatInChord){
@@ -1279,7 +1379,7 @@ function resetStage(){
     eyebrow:isTrain ? 'Train' : 'Perform',
     title:isTrain ? 'Ready when you are' : 'Ready to jam',
     lede:isTrain
-      ? `Every prompt is held for four bars, so each chord in the rotation gets the same time. Runs to ${clock(session.total)} at ${bpm()} BPM.`
+      ? `Chords hold for four bars, root notes for eight, so each one in the rotation gets the same time. Runs to ${clock(session.total)} at ${bpm()} BPM.`
       : `A random progression built from the chords of ${key()} major — the key you have been practising. Four bars a chord, new constraint each change.`,
     idle:true
   });
@@ -1319,11 +1419,16 @@ function render(){
   ).join('');
 
   const nextPos = POSITIONS[(Number(store.get('cagedLastPosition', -1)) + 1) % POSITIONS.length].name;
+  const days = streak();
   $('progressList').innerHTML = [
+    ['Streak', days ? days + (days === 1 ? ' day' : ' days') : 'Not going'],
+    ['This week', sessionsInLast(7) + ' of 7 days'],
     ['Sessions logged', store.get('cagedSessions', 0)],
     ['Last session', store.get('cagedLastSession', 'Not yet')],
     ['Up next', nextPos]
   ].map(r => `<div class="row"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('');
+  const fc = document.getElementById('fluencyCard');
+  if(fc) fc.outerHTML = '<div id="fluencyCard">' + fluencyCard() + '</div>';
 }
 
 function setMode(next){
@@ -1345,6 +1450,158 @@ function setMode(next){
   render();
 }
 
+/* ==================================================================
+   Practice motivation — onboarding, fluency check-ins, progress
+   ================================================================== */
+const SKILLS = [
+  ['note',  'Note recall'],
+  ['chord', 'Chord shape'],
+  ['arp',   'Arpeggio'],
+  ['scale', 'Full scale'],
+  ['pent',  'Pentatonic']
+];
+const FLUENCY_EVERY = 3;      // sessions between check-ins
+const HIATUS_DAYS = 4;        // gap that re-surfaces the anchoring statement
+const ANCHOR_EXAMPLES = ['after dinner each evening', 'before work each morning',
+                         'once the kids are in bed', 'straight after the school run'];
+const ANCHORS = [
+  'Hunting for every note, losing the beat',
+  'Found them, but kept looking at the diagram',
+  'Got through it without the diagram, a few stumbles',
+  'Smooth at tempo, the odd hesitation',
+  "Didn't have to think about it"
+];
+
+const today = () => new Date().toISOString().slice(0, 10);
+const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+const readJSON = (k, d) => { try { return JSON.parse(store.get(k, JSON.stringify(d))); } catch(e){ return d; } };
+
+/* ---- session log, streak, consistency ---- */
+function logSession(){
+  const log = readJSON('cagedLog', []);
+  if(log[log.length - 1] !== today()) log.push(today());
+  store.set('cagedLog', JSON.stringify(log));
+  return log;
+}
+function streak(){
+  const log = readJSON('cagedLog', []);
+  if(!log.length) return 0;
+  const last = log[log.length - 1];
+  if(daysBetween(last, today()) > 1) return 0;      /* broken unless today or yesterday */
+  let n = 1;
+  for(let i = log.length - 1; i > 0; i--){
+    if(daysBetween(log[i - 1], log[i]) === 1) n++; else break;
+  }
+  return n;
+}
+const sessionsInLast = days =>
+  readJSON('cagedLog', []).filter(d => daysBetween(d, today()) < days).length;
+
+/* ---- sheets ---- */
+function sheet(title, body, foot){
+  document.body.insertAdjacentHTML('beforeend',
+    '<div class="fbwrap" id="mvwrap"><div class="fbsheet">' +
+    '<div class="fbhead"><b>' + title + '</b>' +
+    '<button class="fbx" onclick="closeSheet()">&times;</button></div>' +
+    '<div class="fbbody">' + body + '</div>' +
+    '<div class="fbfoot">' + foot + '</div></div></div>');
+}
+function closeSheet(){ const w = document.getElementById('mvwrap'); if(w) w.remove(); }
+
+/* ---- 21. onboarding and the anchoring statement ---- */
+function openOnboarding(first){
+  sheet(first ? 'Before you start' : 'Your practice plan',
+    (first ? '<p class="mv-lede">Two questions. People who write these down practise more than people who mean to.</p>' : '') +
+    '<label class="fblab" for="mvWhy">Why do you want to practise?</label>' +
+    '<textarea id="mvWhy" rows="3" placeholder="To stop getting stuck in the same box">' + store.get('cagedWhy', '') + '</textarea>' +
+    '<label class="fblab" for="mvAnchor">I will practise the guitar\u2026</label>' +
+    '<input id="mvAnchor" placeholder="after dinner each evening" value="' + store.get('cagedAnchor', '') + '">' +
+    '<div class="mv-chips">' + ANCHOR_EXAMPLES.map(x =>
+      '<button onclick="document.getElementById(\'mvAnchor\').value=\'' + x + '\'">' + x + '</button>').join('') + '</div>' +
+    '<p class="mv-note">Tie it to something that already happens \u2014 dinner, the commute, the kids going up. ' +
+    '"In the evenings" has nothing to fire it.</p>',
+    (first ? '<button class="fbbtn ghost" onclick="skipOnboarding()">Not now</button>' : '') +
+    '<span style="flex:1"></span><button class="fbbtn" onclick="saveOnboarding()">Save</button>');
+}
+function saveOnboarding(){
+  store.set('cagedWhy', document.getElementById('mvWhy').value.trim());
+  store.set('cagedAnchor', document.getElementById('mvAnchor').value.trim());
+  store.set('cagedAnchorSeen', today());
+  closeSheet(); render();
+}
+function skipOnboarding(){ store.set('cagedOnboardSkipped', today()); closeSheet(); }
+
+/* Surfaced by circumstance, not by calendar — a statement shown every Monday
+   becomes wallpaper by week three. */
+function maybeRemind(){
+  const anchor = store.get('cagedAnchor', '');
+  if(!anchor) return;
+  const log = readJSON('cagedLog', []);
+  if(!log.length) return;
+  const gap = daysBetween(log[log.length - 1], today());
+  const shown = store.get('cagedAnchorSeen', '');
+  if(gap < HIATUS_DAYS) return;
+  if(shown && daysBetween(shown, today()) < HIATUS_DAYS) return;
+  store.set('cagedAnchorSeen', today());
+  sheet('Welcome back',
+    '<p class="mv-lede">It has been ' + gap + ' days. You said you would practise:</p>' +
+    '<blockquote class="mv-quote">' + anchor + '</blockquote>' +
+    (store.get('cagedWhy', '') ? '<p class="mv-note">Because: ' + store.get('cagedWhy', '') + '</p>' : '') +
+    '<p class="mv-note">If that slot stopped working, change it rather than pushing through.</p>',
+    '<button class="fbbtn ghost" onclick="closeSheet();openOnboarding(false)">Change it</button>' +
+    '<span style="flex:1"></span><button class="fbbtn" onclick="closeSheet()">Still works</button>');
+}
+
+/* ---- 22. fluency check-in ---- */
+function openCheckIn(){
+  sheet('How did that feel?',
+    '<p class="mv-lede">Rate the skill, not the position. Same five every time, so the trend means something.</p>' +
+    '<ol class="mv-anchors">' + ANCHORS.map(a => '<li>' + a + '</li>').join('') + '</ol>' +
+    SKILLS.map(([k, label]) =>
+      '<div class="mv-row"><span>' + label + '</span><span class="mv-scale" id="mv-' + k + '">' +
+      [1,2,3,4,5].map(n => '<button onclick="pickScore(\'' + k + '\',' + n + ')">' + n + '</button>').join('') +
+      '</span></div>').join(''),
+    '<button class="fbbtn ghost" onclick="closeSheet()">Skip</button>' +
+    '<span style="flex:1"></span><button class="fbbtn" onclick="saveCheckIn()">Save</button>');
+}
+let scores = {};
+function pickScore(k, n){
+  scores[k] = n;
+  document.querySelectorAll('#mv-' + k + ' button')
+    .forEach((b, i) => b.classList.toggle('on', i + 1 === n));
+}
+function saveCheckIn(){
+  if(!Object.keys(scores).length){ closeSheet(); return; }
+  const all = readJSON('cagedFluency', []);
+  all.push({d: today(), n: Number(store.get('cagedSessions', 0)), r: scores});
+  store.set('cagedFluency', JSON.stringify(all));
+  scores = {};
+  closeSheet(); render();
+}
+
+/* ---- 23. progress ---- */
+function spark(values){
+  if(values.length < 2) return '<span class="mv-nodata">\u2014</span>';
+  const w = 84, h = 20, step = w / (values.length - 1);
+  const pts = values.map((v, i) => (i * step).toFixed(1) + ',' + (h - ((v - 1) / 4) * (h - 4) - 2).toFixed(1)).join(' ');
+  return '<svg class="mv-spark" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none">' +
+         '<polyline points="' + pts + '"/></svg>';
+}
+function fluencyCard(){
+  const all = readJSON('cagedFluency', []);
+  if(all.length < 2) return '';
+  return '<section class="card"><h3 class="card__title">How it is feeling</h3><div class="list">' +
+    SKILLS.map(([k, label]) => {
+      const vals = all.map(e => e.r[k]).filter(v => v);
+      const last = vals[vals.length - 1];
+      return '<div class="row"><span>' + label + '</span>' +
+             '<span class="mv-trend">' + spark(vals.slice(-8)) +
+             '<b>' + (last || '\u2013') + '</b></span></div>';
+    }).join('') +
+    '</div><p class="mv-foot">Confidence, not skill. Rotating positions feels worse and works better.</p></section>';
+}
+
+
 /* ============================================================
    8. Wiring
    ============================================================ */
@@ -1362,10 +1619,13 @@ $('metroBtn').onclick = () => metro.on ? stopMetro() : startMetro();
 
 $('completeBtn').onclick = () => {
   store.set('cagedLastPosition', $('positionSelect').value);
-  store.set('cagedSessions', Number(store.get('cagedSessions', 0)) + 1);
+  const n = Number(store.get('cagedSessions', 0)) + 1;
+  store.set('cagedSessions', n);
   store.set('cagedLastSession', new Date().toLocaleDateString());
+  logSession();
   $('positionSelect').value = (Number($('positionSelect').value) + 1) % POSITIONS.length;
   render();
+  if(n % FLUENCY_EVERY === 0) openCheckIn();
 };
 
 $('backingToggle').onchange = e => { if(!e.target.checked) Audio.hush(); };
@@ -1406,6 +1666,7 @@ document.addEventListener('keydown', e => {
 resetStage();
 render();
 requestAnimationFrame(frame);
+
 
 /* ==================================================================
    Feedback
@@ -1573,6 +1834,11 @@ document.body.insertAdjacentHTML('beforeend',
 document.body.insertAdjacentHTML('beforeend',
   '<button class="fbfab" onclick="FB.open()" aria-label="Give feedback">Feedback</button>');
 FB.hint();
+
+if(!store.get('cagedAnchor','') && !store.get('cagedOnboardSkipped','') && !Number(store.get('cagedSessions', 0)))
+  setTimeout(() => openOnboarding(true), 600);
+else
+  setTimeout(maybeRemind, 600);
 
 document.body.insertAdjacentHTML('beforeend',
   '<button class="fbfab" onclick="FB.open()" aria-label="Give feedback">Feedback</button>');
