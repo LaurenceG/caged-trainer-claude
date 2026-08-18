@@ -38,6 +38,13 @@ body.mode-perform{
   --accent-ink:#4f4dd6;
   --accent-wash:rgba(94,92,230,.10);
 }
+body.mode-test{
+  --accent:#0a7c5a;
+  --accent-ink:#08694c;
+  --accent-wash:rgba(10,124,90,.10);
+  --dot:#0a6e50;
+  --dot-ink:#0a6e50;
+}
 @media (prefers-color-scheme:dark){
   :root{
     --canvas:#000000;
@@ -62,6 +69,14 @@ body.mode-perform{
     --accent:#7d7aff;
     --accent-ink:#a5a3ff;
     --accent-wash:rgba(125,122,255,.18);
+  }
+  body.mode-test{
+    --accent:#2ec49a;
+    --accent-ink:#5fdcb8;
+    --accent-wash:rgba(46,196,154,.16);
+    --dot:#5fdcb8;
+    --dot-ink:#5fdcb8;
+    --dot-on-ink:#062018;
   }
 }
 
@@ -93,9 +108,10 @@ button{font:inherit;color:inherit}
 .masthead h1{font-size:30px;font-weight:600;letter-spacing:-.022em}
 .masthead p{color:var(--ink-2);font-size:15px;margin-top:3px}
 
-.seg{position:relative;display:flex;background:var(--surface-sunken);border-radius:12px;padding:3px;min-width:264px}
-.seg__thumb{position:absolute;top:3px;left:3px;width:calc(50% - 3px);height:calc(100% - 6px);background:var(--surface);border-radius:9px;box-shadow:var(--shadow-1);transition:transform .32s var(--ease);pointer-events:none}
+.seg{position:relative;display:flex;background:var(--surface-sunken);border-radius:12px;padding:3px;min-width:300px}
+.seg__thumb{position:absolute;top:3px;left:3px;width:calc(33.333% - 2px);height:calc(100% - 6px);background:var(--surface);border-radius:9px;box-shadow:var(--shadow-1);transition:transform .32s var(--ease);pointer-events:none}
 body.mode-perform .seg__thumb{transform:translateX(100%)}
+body.mode-test .seg__thumb{transform:translateX(200%)}
 .seg button{position:relative;flex:1;border:0;background:none;padding:9px 14px;font-size:14px;font-weight:500;color:var(--ink-2);cursor:pointer;border-radius:9px;transition:color .2s}
 .seg button[aria-selected="true"]{color:var(--ink);font-weight:600}
 
@@ -273,6 +289,61 @@ input[type="range"]::-moz-range-thumb{width:20px;height:20px;border:0;border-rad
   *{animation-duration:.001ms !important;transition-duration:.001ms !important}
 }
 
+
+/* ---- skill test ---- */
+#testPanel{display:grid;gap:16px}
+.tt-level{padding:16px 18px 18px}
+.tt-level header{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:4px}
+.tt-level h3{font-size:16px;font-weight:600;margin:0}
+.tt-help{font-weight:400;font-size:12.5px;color:var(--ink-3);margin-left:6px}
+.tt-score{font-size:12.5px;font-weight:600;color:var(--accent-ink);flex:none}
+.tt-level.locked{opacity:.55}
+.tt-locked{font-size:12.5px;color:var(--ink-3);margin:2px 0 0}
+.tt-cells{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;margin-top:14px}
+.tt-cell{display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;
+  border:1px solid var(--hairline);border-radius:var(--r-md);background:var(--surface);
+  padding:11px 13px;cursor:pointer;color:var(--ink);font:inherit}
+.tt-cell b{font-size:14px;font-weight:600}
+.tt-cell span{font-size:12px;color:var(--ink-3)}
+.tt-cell.ok{border-color:var(--accent);background:var(--accent-wash)}
+.tt-cell.ok span{color:var(--accent-ink)}
+.tt-cell.soon,.tt-cell[disabled]{cursor:default;background:var(--surface-sunken);border-color:transparent}
+.tt-cell.soon b{color:var(--ink-3)}
+.tt-pos{display:flex;gap:4px;margin-top:7px}
+.tt-pos button{width:26px;height:26px;border-radius:7px;border:1px solid var(--hairline);
+  background:var(--surface);font:inherit;font-size:12px;cursor:pointer;color:var(--ink-2);padding:0}
+.tt-pos button.ok{background:var(--accent);color:#fff;border-color:transparent}
+.tt-pos button[disabled]{cursor:default;opacity:.5}
+
+.tt{overflow:hidden}
+.tt-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding:16px 18px 12px}
+.tt-eyebrow{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--accent-ink)}
+.tt-head h2{font-size:21px;font-weight:600;letter-spacing:-.02em;margin:2px 0 3px}
+.tt-sub{font-size:13px;color:var(--ink-2)}
+.tt-body{padding:6px 18px 18px;display:grid;gap:14px}
+.tt-centre{justify-items:center;text-align:center}
+.tt-blurb{font-size:14.5px;color:var(--ink-2);line-height:1.5;margin:0;max-width:52ch}
+.tt-count{font-size:76px;font-weight:600;letter-spacing:-.04em;line-height:1;color:var(--accent);
+  font-variant-numeric:tabular-nums}
+.tt-now{font-size:44px;font-weight:600;letter-spacing:-.03em;line-height:1.05}
+.tt-nowsub{font-size:13.5px;color:var(--ink-2);margin-top:-6px}
+.tt-clock{font-size:20px;font-weight:500;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tt-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:14px 18px;border-top:1px solid var(--hairline-soft)}
+.tt-note{font-size:12px;color:var(--ink-3);max-width:34ch;line-height:1.4}
+.tt-marks{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px}
+.tt-mark{border:1px solid var(--hairline);border-radius:var(--r-md);padding:9px 11px;cursor:pointer;
+  font:inherit;text-align:left;background:var(--surface);color:var(--ink);display:flex;flex-direction:column}
+.tt-mark b{font-size:15px;font-weight:600}
+.tt-mark span{font-size:11.5px;color:var(--ink-3)}
+.tt-mark.ok{border-color:var(--accent);background:var(--accent-wash)}
+.tt-mark.no{border-color:var(--red);background:transparent;opacity:.7}
+.tt-mark.no b{text-decoration:line-through;color:var(--red)}
+.tt-yesno{display:flex;gap:9px}
+.tt-result{font-size:30px;font-weight:600;letter-spacing:-.025em}
+.tt-result.pass{color:var(--accent-ink)}
+.tt-result.fail{color:var(--ink-2)}
+
 /* ---- practice motivation ---- */
 .mv-lede{font-size:14.5px;color:var(--ink-2);line-height:1.5;margin:0 0 4px}
 .mv-note{font-size:12.5px;color:var(--ink-3);line-height:1.5;margin:12px 0 0}
@@ -356,10 +427,13 @@ input[type="range"]::-moz-range-thumb{width:20px;height:20px;border:0;border-rad
       <div class="seg__thumb" aria-hidden="true"></div>
       <button id="trainTab" role="tab" aria-selected="true">Train</button>
       <button id="performTab" role="tab" aria-selected="false">Perform</button>
+      <button id="testTab" role="tab" aria-selected="false">Test</button>
     </div>
   </header>
 
-  <div class="layout">
+  <div id="testPanel" hidden></div>
+
+  <div class="layout" id="mainLayout">
 
     <!-- ---------------- Stage ---------------- -->
     <section class="card stage col">
@@ -848,6 +922,11 @@ function schedule(){
     const accent = metro.beat % BEATS_PER_BAR === 0;
     let event = null;
 
+    /* the test runs on the metronome but not on a timed session */
+    if(session.mode === 'test' && tst.phase === 'running'){
+      event = {kind:'testbeat'};
+    }
+
     if(session.running && !session.paused){
       if(session.mode === 'perform' && perform.progression){
         if(perform.pending || perform.beatInChord >= BEATS_PER_CHORD){
@@ -864,6 +943,8 @@ function schedule(){
               .forEach(h => Audio.strike(voicing(perform.chord, h.voice),
                                          t + (h.at - bar) * spb, h.level, COMP_TAIL_BEATS * spb));
         perform.beatInChord++;
+      } else if(session.mode === 'test'){
+        /* handled below, outside the running-session guard */
       } else if(session.mode === 'train' && session.plan){
         const sec = session.plan.sections[train.sectionIndex];
         const last = session.plan.sections.length - 1;
@@ -1230,6 +1311,7 @@ function frame(){
     const dot = $('beatDot');
     dot.className = 'dot beat' + (e.accent ? ' accent' : '');
     setTimeout(() => dot.className = 'dot', 90);
+    if(e.event && e.event.kind === 'testbeat'){ testBeat(); renderTest(); continue; }
     if(!session.running) continue;
     if(session.mode === 'perform'){
       if(e.event) performPrompt();
@@ -1256,6 +1338,7 @@ function frame(){
 }
 
 function start(){
+  if(session.mode === 'test') return;
   Audio.ensure();
   stopSession(false);
   session.running = true; session.paused = false;
@@ -1434,11 +1517,14 @@ function render(){
 function setMode(next){
   if(session.mode === next) return;
   stopSession(false);
+  if(tst.phase !== 'idle') closeTest();
   session.mode = next;
-  document.body.classList.toggle('mode-perform', next === 'perform');
-  document.body.classList.toggle('mode-train', next === 'train');
-  $('trainTab').setAttribute('aria-selected', next === 'train');
-  $('performTab').setAttribute('aria-selected', next === 'perform');
+  ['train','perform','test'].forEach(m => document.body.classList.toggle('mode-' + m, next === m));
+  ['trainTab','performTab','testTab'].forEach((id, i) =>
+    $(id).setAttribute('aria-selected', ['train','perform','test'][i] === next));
+  $('mainLayout').hidden = next === 'test';
+  $('testPanel').hidden = next !== 'test';
+  if(next === 'test'){ renderTest(); return; }
   $('startBtn').textContent = next === 'train' ? 'Start train' : 'Start perform';
   $('trainMinutesField').hidden = next !== 'train';
   $('performMinutesField').hidden = next === 'train';
@@ -1448,6 +1534,279 @@ function setMode(next){
   $('performBpmField').hidden = next === 'train';
   resetStage();
   render();
+}
+
+
+/* ==================================================================
+   Skill test — 28 standalone tests across three levels
+   ================================================================== */
+const TEST_SKILLS = [
+  {k:'chord', name:'Chord shapes', focus:'chord'},
+  {k:'arp',   name:'Arpeggio',     focus:'chord'},
+  {k:'scale', name:'Full scale',   focus:'scale'},
+  {k:'pent',  name:'Pentatonic',   focus:'pent'},
+  {k:'note',  name:'Note recall',  soon:true}
+];
+const LEVELS = [
+  {n:1, diagram:'full',  perBeat:1, countdown:7, help:'Full diagram'},
+  {n:2, diagram:'roots', perBeat:2, countdown:5, help:'Roots only'},
+  {n:3, diagram:'off',   perBeat:3, countdown:3, help:'No diagram'}
+];
+const PASSES = 3;              // clean run-throughs required
+const CHORD_BEATS = 4;         // one bar per chord, every level
+const POS_NAMES = ['1st position','2nd position','3rd position','4th position','5th position'];
+
+/* Level 2 progressions, chosen so the four of them span all ten shapes */
+const L2_PROGRESSIONS = [
+  {pos:'1st position', degrees:[1,4,5]},
+  {pos:'1st position', degrees:[2,3,6]},
+  {pos:'2nd position', degrees:[1,4,5]},
+  {pos:'2nd position', degrees:[2,6,3]}
+];
+const TWELVE_BAR = [1,1,1,1,4,4,1,1,5,4,1,5];
+
+const testId = (lvl, k, pos) => 'l' + lvl + '-' + k + (pos != null ? '-p' + (pos + 1) : '');
+const passedTests = () => { try { return JSON.parse(store.get('cagedTests', '[]')); } catch(e){ return []; } };
+const hasPassed = id => passedTests().indexOf(id) !== -1;
+function markPassed(id){
+  const all = passedTests();
+  if(all.indexOf(id) === -1){ all.push(id); store.set('cagedTests', JSON.stringify(all)); }
+}
+/* every test that makes up a level */
+function levelTests(lvl){
+  const out = [];
+  TEST_SKILLS.filter(s => !s.soon).forEach(s => {
+    if(lvl === 3) POS_NAMES.forEach((_, i) => out.push({id:testId(3, s.k, i), skill:s, pos:i}));
+    else out.push({id:testId(lvl, s.k), skill:s, pos:null});
+  });
+  return out;
+}
+const levelDone = lvl => levelTests(lvl).every(t => hasPassed(t.id));
+const levelUnlocked = lvl => lvl === 1 || levelDone(lvl - 1);
+
+/* ---- what a given test actually asks for ---- */
+function buildTest(lvl, skillKey, posIndex){
+  const L = LEVELS[lvl - 1], k = key();
+  const skill = TEST_SKILLS.find(s => s.k === skillKey);
+  const pos = posIndex != null ? posIndex : Math.floor(Math.random() * 5);
+  const t = {level:L, skill, posIndex:pos, posName:POS_NAMES[pos], key:k, items:[], beatsPerItem:CHORD_BEATS};
+
+  if(skillKey === 'chord'){
+    if(lvl === 1){
+      /* ten shapes in isolation, each on a randomly assigned root */
+      t.items = Object.keys(SHAPES).map(name => {
+        const rootPc = Math.floor(Math.random() * 12);
+        return {shape:name, rootPc, label:noteName(rootPc, false) + (SHAPES[name].minor ? 'm' : ''), sub:name};
+      }).sort(() => Math.random() - .5);
+      t.blurb = 'Ten shapes, one bar each. The root moves every time.';
+    } else if(lvl === 2){
+      L2_PROGRESSIONS.forEach(pr => pr.degrees.forEach(d => {
+        const shape = shapeNameFor(pr.pos, d), rootPc = degreeRootPc(k, d);
+        t.items.push({shape, rootPc, label:chordName(k, 'major', d), sub:shapeLabel(shape), group:pr.pos});
+      }));
+      t.blurb = 'Four three-chord progressions. Between them they use all ten shapes.';
+    } else {
+      TWELVE_BAR.forEach(d => {
+        const shape = shapeNameFor(t.posName, d), rootPc = degreeRootPc(k, d);
+        t.items.push({shape, rootPc, label:chordName(k, 'major', d), sub:shapeLabel(shape)});
+      });
+      t.blurb = 'Twelve bars in the ' + t.posName + '. One chord per bar throughout.';
+    }
+    t.totalBeats = t.items.length * CHORD_BEATS;
+  } else {
+    /* one shape, played up and down, PASSES times */
+    const degree = 1 + Math.floor(Math.random() * 6);
+    const shape = shapeNameFor(t.posName, degree), rootPc = degreeRootPc(k, degree);
+    const notes = shapeNotes(shape, rootPc).notes.filter(n =>
+      skill.focus === 'scale' ? true : skill.focus === 'pent' ? n.pent : n.role !== 'other');
+    t.shape = shape; t.rootPc = rootPc; t.degree = degree;
+    t.noteCount = notes.length;
+    t.notesPerPass = 2 * notes.length - 1;          /* up and down, top note not repeated */
+    t.totalBeats = Math.ceil(t.notesPerPass * PASSES / L.perBeat);
+    t.beatsPerPass = t.notesPerPass / L.perBeat;
+    t.blurb = t.notesPerPass + ' notes up and down, ' + PASSES + ' times, ' +
+              L.perBeat + ' note' + (L.perBeat > 1 ? 's' : '') + ' per beat.';
+  }
+  return t;
+}
+
+/* ---- runner state ---- */
+const tst = {t:null, phase:'idle', beat:0, item:0, results:[], id:null, countdown:0};
+
+function openTest(lvl, skillKey, posIndex){
+  const skill = TEST_SKILLS.find(s => s.k === skillKey);
+  if(skill.soon) return;
+  if(!levelUnlocked(lvl)) return;
+  tst.id = testId(lvl, skillKey, posIndex);
+  tst.t = buildTest(lvl, skillKey, posIndex);
+  tst.phase = 'brief'; tst.beat = 0; tst.item = 0; tst.results = [];
+  renderTest();
+}
+function closeTest(){ stopMetro(); tst.phase = 'idle'; tst.t = null; Wake.sync(); renderTest(); }
+
+function beginTest(){
+  Audio.ensure();
+  tst.phase = 'countdown';
+  tst.countdown = tst.t.level.countdown;
+  renderTest();
+  const tick = () => {
+    tst.countdown--;
+    if(tst.countdown <= 0){
+      clearInterval(h);
+      tst.phase = 'running'; tst.beat = 0; tst.item = 0;
+      startMetro();
+    }
+    renderTest();
+  };
+  const h = setInterval(tick, 1000);
+}
+
+function testBeat(){                    /* called once per scheduled beat */
+  const t = tst.t;
+  tst.beat++;
+  if(t.skill.k === 'chord') tst.item = Math.floor(tst.beat / CHORD_BEATS);
+  if(tst.beat >= t.totalBeats){
+    stopMetro();
+    tst.phase = 'rating';
+    tst.results = t.skill.k === 'chord' && t.level.n === 1
+      ? t.items.map(() => true)         /* per-shape marking at level 1 */
+      : [true];
+  }
+}
+
+function markResult(i){
+  tst.results[i] = !tst.results[i];
+  renderTest();
+}
+function finishTest(){
+  const passed = tst.results.every(Boolean);
+  if(passed) markPassed(tst.id);
+  tst.phase = 'done'; tst.passed = passed;
+  renderTest(); render();
+}
+
+/* ---- rendering ---- */
+function testDiagram(){
+  const t = tst.t, mode = t.level.diagram;
+  const reveal = tst.phase === 'rating' || tst.phase === 'done';
+  const show = reveal ? 'full' : mode;
+  const prev = $('diagramMode').value;
+  $('diagramMode').value = show === 'off' ? 'off' : show;
+  let html = '';
+  if(t.skill.k === 'chord'){
+    const it = t.items[Math.min(tst.item, t.items.length - 1)];
+    html = show === 'off' && !reveal ? '' : fretboard(it.shape, it.rootPc, t.key, 'chord');
+  } else {
+    html = show === 'off' && !reveal ? '' : fretboard(t.shape, t.rootPc, t.key, t.skill.focus);
+  }
+  $('diagramMode').value = prev;
+  return html;
+}
+
+function renderTest(){
+  const host = $('testPanel');
+  if(!host) return;
+  if(tst.phase === 'idle'){ host.innerHTML = testGrid(); return; }
+  const t = tst.t;
+  const head = `<div class="tt-head"><div><div class="tt-eyebrow">Level ${t.level.n} · ${t.level.help}</div>
+      <h2>${t.skill.name}</h2><div class="tt-sub">${t.key} · ${t.posName}${t.shape ? ' · ' + shapeLabel(t.shape) : ''}</div></div>
+    <button class="btn btn--quiet" onclick="closeTest()">Close</button></div>`;
+
+  if(tst.phase === 'brief'){
+    host.innerHTML = `<section class="card tt">${head}
+      <div class="tt-body">
+        <p class="tt-blurb">${t.blurb}</p>
+        <dl class="details">
+          <div class="detail"><dt>Tempo</dt><dd>60 BPM</dd></div>
+          <div class="detail"><dt>Diagram</dt><dd>${t.level.help}</dd></div>
+          <div class="detail"><dt>Length</dt><dd>${clock(t.totalBeats)}</dd></div>
+          <div class="detail"><dt>Mistakes allowed</dt><dd>None</dd></div>
+        </dl>
+        ${testDiagram()}
+      </div>
+      <div class="tt-foot"><span class="tt-note">Counts in from ${t.level.countdown}</span>
+        <button class="btn btn--primary" onclick="beginTest()">I'm ready</button></div></section>`;
+    return;
+  }
+  if(tst.phase === 'countdown'){
+    host.innerHTML = `<section class="card tt">${head}
+      <div class="tt-body tt-centre"><div class="tt-count">${tst.countdown}</div>
+      <p class="tt-blurb">${t.blurb}</p></div></section>`;
+    return;
+  }
+  if(tst.phase === 'running'){
+    const t2 = tst.t, left = t2.totalBeats - tst.beat;
+    const now = t2.skill.k === 'chord'
+      ? `<div class="tt-now">${t2.items[Math.min(tst.item, t2.items.length-1)].label}</div>
+         <div class="tt-nowsub">${t2.items[Math.min(tst.item, t2.items.length-1)].sub}</div>`
+      : `<div class="tt-now">Pass ${Math.min(PASSES, Math.floor(tst.beat / t2.beatsPerPass) + 1)} of ${PASSES}</div>
+         <div class="tt-nowsub">${t2.level.perBeat} note${t2.level.perBeat>1?'s':''} per beat</div>`;
+    host.innerHTML = `<section class="card tt">${head}
+      <div class="rail"><div class="rail__fill" style="width:${(tst.beat/t2.totalBeats*100).toFixed(1)}%"></div></div>
+      <div class="tt-body tt-centre">${now}
+        <div class="tt-clock">${clock(left)}</div>
+        ${testDiagram()}</div>
+      <div class="tt-foot"><span class="tt-note">Stop if you make a mistake — it has to be clean</span>
+        <button class="btn" onclick="closeTest()">Abandon</button></div></section>`;
+    return;
+  }
+  if(tst.phase === 'rating'){
+    const perShape = t.skill.k === 'chord' && t.level.n === 1;
+    const body = perShape
+      ? `<p class="tt-blurb">Mark any you did not get cleanly in the bar.</p>
+         <div class="tt-marks">${t.items.map((it,i)=>
+           `<button class="tt-mark ${tst.results[i]?'ok':'no'}" onclick="markResult(${i})">
+              <b>${it.label}</b><span>${it.sub}</span></button>`).join('')}</div>`
+      : `<p class="tt-blurb">Three clean passes, no mistakes?</p>
+         <div class="tt-yesno">
+           <button class="btn ${tst.results[0]?'btn--primary':''}" onclick="tst.results[0]=true;renderTest()">Clean</button>
+           <button class="btn ${!tst.results[0]?'btn--primary':''}" onclick="tst.results[0]=false;renderTest()">Not clean</button>
+         </div>`;
+    host.innerHTML = `<section class="card tt">${head}
+      <div class="tt-body">${body}${testDiagram()}</div>
+      <div class="tt-foot"><span class="tt-note">The app times you; only you can hear whether it was clean</span>
+        <button class="btn btn--primary" onclick="finishTest()">Submit</button></div></section>`;
+    return;
+  }
+  host.innerHTML = `<section class="card tt">${head}
+    <div class="tt-body tt-centre">
+      <div class="tt-result ${tst.passed?'pass':'fail'}">${tst.passed ? 'Passed' : 'Not this time'}</div>
+      <p class="tt-blurb">${tst.passed
+        ? (levelDone(t.level.n) && t.level.n < 3 ? 'That completes level ' + t.level.n + '. Level ' + (t.level.n+1) + ' is unlocked.' : 'Logged.')
+        : 'Nothing recorded. Take it again whenever you like.'}</p>
+    </div>
+    <div class="tt-foot"><span></span><button class="btn btn--primary" onclick="closeTest()">Back to tests</button></div></section>`;
+}
+
+function testGrid(){
+  return LEVELS.map(L => {
+    const unlocked = levelUnlocked(L.n), done = levelDone(L.n);
+    const tests = levelTests(L.n);
+    const passedN = tests.filter(t => hasPassed(t.id)).length;
+    return `<section class="card tt-level ${unlocked?'':'locked'}">
+      <header>
+        <div><h3>Level ${L.n} <span class="tt-help">${L.help} · ${L.perBeat} note${L.perBeat>1?'s':''} per beat</span></h3></div>
+        <span class="tt-score">${done ? 'Complete' : unlocked ? passedN + ' of ' + tests.length : 'Locked'}</span>
+      </header>
+      ${unlocked ? '' : '<p class="tt-locked">Clear every test in level ' + (L.n-1) + ' first.</p>'}
+      <div class="tt-cells">
+        ${TEST_SKILLS.map(s => {
+          if(s.soon) return `<div class="tt-cell soon"><b>${s.name}</b><span>Coming soon</span></div>`;
+          if(L.n < 3){
+            const id = testId(L.n, s.k), ok = hasPassed(id);
+            return `<button class="tt-cell ${ok?'ok':''}" ${unlocked?'':'disabled'}
+              onclick="openTest(${L.n},'${s.k}')"><b>${s.name}</b>
+              <span>${ok ? 'Passed' : 'Not yet'}</span></button>`;
+          }
+          const n = POS_NAMES.filter((_,i)=>hasPassed(testId(3,s.k,i))).length;
+          return `<div class="tt-cell ${n===5?'ok':''}"><b>${s.name}</b>
+            <span>${n} of 5 positions</span>
+            <span class="tt-pos">${POS_NAMES.map((p,i)=>
+              `<button class="${hasPassed(testId(3,s.k,i))?'ok':''}" ${unlocked?'':'disabled'}
+                 onclick="openTest(3,'${s.k}',${i})" title="${p}">${i+1}</button>`).join('')}</span></div>`;
+        }).join('')}
+      </div></section>`;
+  }).join('');
 }
 
 /* ==================================================================
@@ -1611,6 +1970,7 @@ $('positionSelect').value = (Number(store.get('cagedLastPosition', -1)) + 1) % P
 
 $('trainTab').onclick = () => setMode('train');
 $('performTab').onclick = () => setMode('perform');
+$('testTab').onclick = () => setMode('test');
 $('startBtn').onclick = start;
 $('pauseBtn').onclick = () => session.paused ? resume() : pause();
 $('stopBtn').onclick = () => stopSession(true);
